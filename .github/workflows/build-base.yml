@@ -1,0 +1,41 @@
+name: Run Build
+on:
+  workflow_call:
+    inputs:
+      checkoutPath:
+        type: string
+        default: '../../co'
+      targetBranch:
+        type: string
+        default: develop
+      publishTarget:
+        type: string
+        default: Build
+      runs-on: # see also: https://colinsalmcorner.com/musings-on-reusable-workflows/
+        description: Platforms to execute on, in format of a string JSON array
+        type: string
+        default: '["ubuntu-latest"]'
+
+jobs:
+  run_build:
+    name: Reusable Build
+    strategy:
+      matrix:
+        runs-on: ${{ fromJSON(inputs.runs-on) }}
+    env:
+      defaultPublishTarget: ${{ inputs.publishTarget }}
+
+    runs-on: ${{ matrix.runs-on }}
+    steps:
+      - name: Checkout Source Code
+        uses: LexisNexis-GHA-Public/checkout@v2.3.4.2
+        with:
+          path: ${{ inputs.checkoutPath }}
+          allow_parent_path: true
+          ref: ${{ inputs.targetBranch }}
+        id: checkout
+
+      - name: Run Build using FAKE
+        id: run-build
+        run: ./build.cmd ${{ env.defaultPublishTarget }}
+        working-directory: ${{ steps.checkout.outputs.WORKSPACE_DIR}}
